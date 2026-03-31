@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Recall | Authentification</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: #FDF9F2;
+    min-height: 100vh;
+    width: 100%;
+    font-family: 'Instrument Serif', serif;
+    overflow-x: hidden;
+  }
+
+  /* Écran d'accueil */
+  .home-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    background: #FDF9F2;
+  }
+
+  .scene {
+    display: flex;
+    align-items: baseline;
+    gap: 0.22em;
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: clamp(3rem, 12vw, 7rem);
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+
+  .word {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .word.up {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  #w-recall {
+    color: #6A8F6F;
+  }
+
+  #w-we, #w-for, #w-you {
+    color: #2C3A2B;
+  }
+
+  /* Effet de rideau qui monte */
+  .curtain {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0;
+    background: #acb6b1;
+    z-index: 20;
+    transition: height 1.4s cubic-bezier(0.65, 0, 0.35, 1);
+    pointer-events: none;
+  }
+
+  .curtain::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    background: linear-gradient(to bottom, transparent, rgba(106, 143, 111, 0.05));
+    pointer-events: none;
+  }
+
+  /* Écran d'authentification - PAS de container global qui dépasse */
+  .auth-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #F5F3EF;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    overflow-y: auto;
+    padding: 2rem;
+  }
+
+  .auth-screen.revealed {
+    opacity: 1;
+    z-index: 15;
+  }
+
+  /* Container de la carte — seul élément avec fond blanc et bordure */
+  .auth-container {
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    background: #FFFFFF;
+    border: 1.5px solid #6A8F6F;
+    border-radius: 10px;
+    padding: 42px 34px 34px 34px;
+    transform: translateY(20px);
+    transition: transform 0.6s ease;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  }
+
+  .auth-screen.revealed .auth-container {
+    transform: translateY(0);
+  }
+
+  /* Titre flottant */
+  .auth-title {
+    position: absolute;
+    top: -30px;
+    left: 5px;
+    font-family: 'Instrument Serif', serif;
+    font-size: 1.8rem;
+    font-style: italic;
+    color: #6A8F6F;
+    background: none;
+    padding: 0 16px;
+    letter-spacing: -0.01em;
+  }
+
+  /* Formulaires */
+  .form-signup, .form-signin, .form-forgot, .form-code {
+    transition: opacity 0.3s ease;
+  }
+
+  .form-signup.hidden, .form-signin.hidden, .form-forgot.hidden, .form-code.hidden {
+    display: none;
+  }
+
+  /* Champs standard */
+  .input-group {
+    margin-bottom: 24px;
+  }
+
+  /* Wrapper pour mot de passe + oeil */
+  .password-wrapper {
+    position: relative;
+  }
+
+  .password-wrapper input {
+    padding-right: 48px;
+  }
+
+  .toggle-password {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .toggle-password svg {
+    width: 18px;
+    height: 18px;
+    stroke: #8F9A7A;
+    stroke-width: 1.5;
+    fill: none;
+    transition: stroke 0.2s ease, transform 0.2s ease;
+  }
+
+  .toggle-password:hover svg {
+    stroke: #6A8F6F;
+    transform: scale(1.05);
+  }
+
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 24px;
+  }
+
+  .checkbox-group input {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: #6A8F6F;
+  }
+
+  .checkbox-group label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    color: #5A6E55;
+    line-height: 1.4;
+  }
+
+  .checkbox-group a {
+    color: #6A8F6F;
+    text-decoration: underline;
+    font-weight: 500;
+  }
+
+  input {
+    width: 100%;
+    padding: 14px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    background: transparent;
+    border: 1px solid #E0D9CF;
+    border-radius: 5px;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  input:focus {
+    border-color: #6A8F6F;
+  }
+
+  /* ========== 6 BLOCS : AUCUN CONTAINER SUPPLÉMENTAIRE, JUSTE LES INPUTS ========== */
+  .code-digits-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 24px;
+    width: 100%;
+  }
+
+  .code-digit {
+    flex: 1;
+    aspect-ratio: 1 / 1.1;
+    text-align: center;
+    font-size: 1.7rem;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    padding: 0;
+    border: 1.5px solid #E0D9CF;
+    border-radius: 12px;
+    background: #FFFFFF;
+    transition: all 0.2s ease;
+    min-width: 0;
+  }
+
+  .code-digit:focus {
+    border-color: #6A8F6F;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(106, 143, 111, 0.2);
+  }
+
+  /* Boutons et sociaux */
+  .social-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    margin-bottom: 0;
+  }
+
+  .social-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: transparent;
+    border: 1px solid #E0D9CF;
+    border-radius: 30px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #5A6E55;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .social-btn:hover {
+    border-color: #6A8F6F;
+    background: rgba(106, 143, 111, 0.05);
+    color: #6A8F6F;
+  }
+
+  .social-btn svg, .social-btn img {
+    width: 16px;
+    height: 16px;
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 24px 0 20px 0;
+  }
+
+  .divider::before,
+  .divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #E8E0D4;
+  }
+
+  .divider span {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.7rem;
+    color: #B9C0A4;
+    margin: 0 12px;
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 14px 24px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    background: #2C3A2B;
+    color: #FDF9F2;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    margin-bottom: 12px;
+  }
+
+  .btn-primary:hover {
+    background: #6A8F6F;
+  }
+
+  .btn-secondary {
+    width: 100%;
+    padding: 14px 24px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    background: transparent;
+    color: #6A8F6F;
+    border: 1px solid #6A8F6F;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(106, 143, 111, 0.05);
+    color: #2C3A2B;
+  }
+
+  .auth-link {
+    margin-top: 24px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    color: #8F9A7A;
+    text-align: center;
+  }
+
+  .auth-link a {
+    color: #6A8F6F;
+    text-decoration: underline;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .forgot-link {
+    display: block;
+    margin-top: -12px;
+    margin-bottom: 24px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    color: #6A8F6F;
+    text-decoration: underline;
+    text-align: right;
+    cursor: pointer;
+  }
+
+  .info-text {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    color: #5A6E55;
+    text-align: center;
+    margin-bottom: 24px;
+    line-height: 1.4;
+  }
+
+  /* Toast */
+  .toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .toast {
+    background: #FFFFFF;
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid #E8E0D4;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    animation: slideIn 0.3s ease;
+    min-width: 280px;
+    max-width: 320px;
+  }
+
+  .toast-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .toast-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .toast-content {
+    flex: 1;
+  }
+
+  .toast-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #2C3A2B;
+  }
+
+  .toast-message {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    color: #8F9A7A;
+    margin-top: 2px;
+  }
+
+  .toast-close {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    opacity: 0.4;
+    transition: opacity 0.2s;
+  }
+
+  .toast-close:hover {
+    opacity: 1;
+  }
+
+  .toast-close svg {
+    width: 12px;
+    height: 12px;
+    stroke: #8F9A7A;
+  }
+
+  .icon-info { background: rgba(106, 143, 111, 0.12); stroke: #6A8F6F; }
+  .icon-success { background: rgba(106, 143, 111, 0.15); stroke: #6A8F6F; }
+  .icon-warning { background: rgba(201, 123, 92, 0.12); stroke: #C97B5C; }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .toast.fade-out {
+    animation: fadeOut 0.3s ease forwards;
+  }
+
+  @keyframes fadeOut {
+    to {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+  }
+
+  /* Responsive : les 6 blocs s'adaptent */
+  @media (max-width: 500px) {
+    .auth-container {
+      padding: 38px 22px 28px 22px;
+    }
+    .code-digit {
+      font-size: 1.3rem;
+      border-radius: 8px;
+    }
+    .code-digits-row {
+      gap: 8px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Écran d'accueil -->
+<div class="home-screen" id="homeScreen">
+  <div class="scene">
+    <span class="word" id="w-we">We</span>
+    <span class="word" id="w-recall">recall</span>
+    <span class="word" id="w-for">for</span>
+    <span class="word" id="w-you">you.</span>
+  </div>
+</div>
+
+<!-- Rideau -->
+<div class="curtain" id="curtain"></div>
+
+<!-- Écran d'authentification : seulement texte, boutons et 6 blocs (sans container supplémentaire) -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-container">
+    <div class="auth-title" id="authTitle">Se connecter</div>
+    
+    <!-- Formulaire d'inscription -->
+    <div class="form-signup hidden" id="formSignup">
+      <div class="input-group">
+        <input type="text" placeholder="Nom" id="lastname">
+      </div>
+      <div class="input-group">
+        <input type="text" placeholder="Prénom" id="firstname">
+      </div>
+      <div class="input-group">
+        <input type="email" placeholder="Adresse Mail" id="emailSignup">
+      </div>
+      <div class="input-group password-wrapper">
+        <input type="password" placeholder="Mot de passe" id="passwordSignup">
+        <button type="button" class="toggle-password" data-target="passwordSignup">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+      <div class="input-group password-wrapper">
+        <input type="password" placeholder="Confirmer mot de passe" id="confirmPassword">
+        <button type="button" class="toggle-password" data-target="confirmPassword">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="checkbox-group">
+        <input type="checkbox" id="termsCheckbox">
+        <label for="termsCheckbox">
+          J'accepte les <a href="#" id="termsLink">conditions d'utilisation</a>
+        </label>
+      </div>
+      
+      <button class="btn-primary" id="signupBtn">Créer mon compte</button>
+      
+      <div class="divider">
+        <span>ou</span>
+      </div>
+      
+      <div class="social-buttons">
+        <button type="button" class="social-btn" id="googleSignup">
+          <img src="logogoogle.png" alt="Google" width="18" height="18" style="display: inline-block;">
+          Google
+        </button>
+        <button type="button" class="social-btn" id="outlookSignup">
+          <img src="LogoOutlook.png" alt="Outlook" width="18" height="18" style="display: inline-block;">
+          Outlook
+        </button>
+      </div>
+      
+      <div class="auth-link">
+        Déjà un compte ? <a id="switchToSignin">Se connecter</a>
+      </div>
+    </div>
+    
+    <!-- Formulaire de connexion -->
+    <div class="form-signin" id="formSignin">
+      <div class="input-group">
+        <input type="email" placeholder="Adresse Mail" id="emailSignin">
+      </div>
+      <div class="input-group password-wrapper">
+        <input type="password" placeholder="Mot de passe" id="passwordSignin">
+        <button type="button" class="toggle-password" data-target="passwordSignin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+      
+      <a href="#" id="forgotPassword" class="forgot-link">Mot de passe oublié ?</a>
+      
+      <button class="btn-primary" id="signinBtn">Se connecter</button>
+      
+      <div class="divider">
+        <span>ou</span>
+      </div>
+      
+      <div class="social-buttons">
+        <button type="button" class="social-btn" id="googleSignin">
+          <img src="logogoogle.png" alt="Google" width="18" height="18" style="display: inline-block;">
+          Google
+        </button>
+        <button type="button" class="social-btn" id="outlookSignin">
+          <img src="LogoOutlook.png" alt="Outlook" width="18" height="18" style="display: inline-block;">
+          Outlook
+        </button>
+      </div>
+      
+      <div class="auth-link">
+        Pas encore de compte ? <a id="switchToSignup">En créer un</a>
+      </div>
+    </div>
+
+    <!-- Formulaire mot de passe oublié (email) -->
+    <div class="form-forgot hidden" id="formForgot">
+      <div class="info-text">
+        Merci de renseigner votre adresse email pour recevoir un code de réinitialisation
+      </div>
+      <div class="input-group">
+        <input type="email" placeholder="Adresse email" id="resetEmail">
+      </div>
+      <button class="btn-primary" id="sendCodeBtn">Envoyer le code</button>
+      <button class="btn-secondary" id="cancelResetBtn">Annuler</button>
+    </div>
+
+    <!-- Formulaire de vérification du code : AUCUN CONTAINER AUTOUR DES BLOCS, juste les 6 inputs inline -->
+    <div class="form-code hidden" id="formCode">
+      <div class="info-text">
+        Un code à 6 chiffres a été envoyé à votre adresse email
+      </div>
+      <!-- LES 6 BLOCS SONT DIRECTEMENT ICI, PAS DE DIV CONTENEUR ADDITIONNEL QUI DÉPASSE -->
+      <div class="code-digits-row">
+        <input type="text" maxlength="1" class="code-digit" id="code1" autofocus>
+        <input type="text" maxlength="1" class="code-digit" id="code2">
+        <input type="text" maxlength="1" class="code-digit" id="code3">
+        <input type="text" maxlength="1" class="code-digit" id="code4">
+        <input type="text" maxlength="1" class="code-digit" id="code5">
+        <input type="text" maxlength="1" class="code-digit" id="code6">
+      </div>
+      <button class="btn-primary" id="verifyCodeBtn">Vérifier le code</button>
+      <button class="btn-secondary" id="resendCodeBtn">Renvoyer le code</button>
+      <div class="auth-link">
+        <a id="backToSigninFromCode">Retour à la connexion</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  // DOM elements
+  const homeScreen = document.getElementById('homeScreen');
+  const curtain = document.getElementById('curtain');
+  const authScreen = document.getElementById('authScreen');
+  const weWord = document.getElementById('w-we');
+  const recallWord = document.getElementById('w-recall');
+  const forWord = document.getElementById('w-for');
+  const youWord = document.getElementById('w-you');
+  
+  const formSignup = document.getElementById('formSignup');
+  const formSignin = document.getElementById('formSignin');
+  const formForgot = document.getElementById('formForgot');
+  const formCode = document.getElementById('formCode');
+  const authTitle = document.getElementById('authTitle');
+  
+  const switchToSignin = document.getElementById('switchToSignin');
+  const switchToSignup = document.getElementById('switchToSignup');
+  const forgotPassword = document.getElementById('forgotPassword');
+  const sendCodeBtn = document.getElementById('sendCodeBtn');
+  const cancelResetBtn = document.getElementById('cancelResetBtn');
+  const verifyCodeBtn = document.getElementById('verifyCodeBtn');
+  const resendCodeBtn = document.getElementById('resendCodeBtn');
+  const backToSigninFromCode = document.getElementById('backToSigninFromCode');
+  const resetEmail = document.getElementById('resetEmail');
+  
+  let userEmail = '';
+
+  // Par défaut : connexion visible
+  formSignup.classList.add('hidden');
+  formSignin.classList.remove('hidden');
+  formForgot.classList.add('hidden');
+  formCode.classList.add('hidden');
+  authTitle.textContent = "Se connecter";
+
+  // Animation des mots
+  setTimeout(() => { weWord.classList.add('up'); }, 100);
+  setTimeout(() => { recallWord.classList.add('up'); }, 300);
+  setTimeout(() => { forWord.classList.add('up'); }, 500);
+  setTimeout(() => { youWord.classList.add('up'); }, 700);
+
+  // Rideau + transition
+  setTimeout(() => {
+    curtain.style.height = '100%';
+    setTimeout(() => {
+      authScreen.classList.add('revealed');
+      homeScreen.style.opacity = '0';
+      homeScreen.style.transition = 'opacity 0.4s ease';
+      setTimeout(() => {
+        curtain.style.height = '0';
+      }, 200);
+      setTimeout(() => {
+        homeScreen.style.display = 'none';
+      }, 600);
+    }, 1300);
+  }, 800);
+
+  // Gestion du déplacement entre les 6 blocs de code (sans container superflu)
+  function setupCodeInputs() {
+    const codeInputs = document.querySelectorAll('.code-digit');
+    codeInputs.forEach((input, idx) => {
+      input.removeEventListener('input', window._codeInputHandler);
+      input.removeEventListener('keydown', window._codeKeyHandler);
+      
+      const inputHandler = (e) => {
+        if (input.value.length === 1 && idx < codeInputs.length - 1) {
+          codeInputs[idx + 1].focus();
+        }
+      };
+      const keyHandler = (e) => {
+        if (e.key === 'Backspace' && input.value.length === 0 && idx > 0) {
+          codeInputs[idx - 1].focus();
+        }
+      };
+      input.addEventListener('input', inputHandler);
+      input.addEventListener('keydown', keyHandler);
+      window._codeInputHandler = inputHandler;
+      window._codeKeyHandler = keyHandler;
+    });
+  }
+
+  function getFullCode() {
+    let code = '';
+    for (let i = 1; i <= 6; i++) {
+      const digit = document.getElementById(`code${i}`).value;
+      code += digit;
+    }
+    return code;
+  }
+
+  function clearCodeInputs() {
+    for (let i = 1; i <= 6; i++) {
+      document.getElementById(`code${i}`).value = '';
+    }
+    const first = document.getElementById('code1');
+    if (first) first.focus();
+  }
+
+  // Toggle password
+  document.querySelectorAll('.toggle-password').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const targetId = this.getAttribute('data-target');
+      const input = document.getElementById(targetId);
+      if (!input) return;
+      const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+      input.setAttribute('type', type);
+      const svg = this.querySelector('svg');
+      if (type === 'text') {
+        svg.innerHTML = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" stroke-width="1.5"/>`;
+      } else {
+        svg.innerHTML = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
+      }
+    });
+  });
+
+  // Switch vers connexion
+  switchToSignin.addEventListener('click', (e) => {
+    e.preventDefault();
+    formSignup.classList.add('hidden');
+    formSignin.classList.remove('hidden');
+    formForgot.classList.add('hidden');
+    formCode.classList.add('hidden');
+    authTitle.textContent = "Se connecter";
+  });
+  
+  switchToSignup.addEventListener('click', (e) => {
+    e.preventDefault();
+    formSignin.classList.add('hidden');
+    formSignup.classList.remove('hidden');
+    formForgot.classList.add('hidden');
+    formCode.classList.add('hidden');
+    authTitle.textContent = "S'inscrire";
+  });
+
+  forgotPassword.addEventListener('click', (e) => {
+    e.preventDefault();
+    formSignin.classList.add('hidden');
+    formForgot.classList.remove('hidden');
+    formCode.classList.add('hidden');
+    authTitle.textContent = "Mot de passe oublié";
+    resetEmail.value = '';
+  });
+
+  cancelResetBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    formForgot.classList.add('hidden');
+    formSignin.classList.remove('hidden');
+    authTitle.textContent = "Se connecter";
+    resetEmail.value = '';
+  });
+
+  backToSigninFromCode.addEventListener('click', (e) => {
+    e.preventDefault();
+    formCode.classList.add('hidden');
+    formSignin.classList.remove('hidden');
+    authTitle.textContent = "Se connecter";
+    clearCodeInputs();
+  });
+
+  // Envoi du code (vers l'écran des 6 blocs)
+  sendCodeBtn.addEventListener('click', () => {
+    const email = resetEmail.value.trim();
+    if (!email) {
+      showToast('warning', 'Email requis', 'Veuillez remplir votre adresse email');
+      return;
+    }
+    if (!email.includes('@') || !email.includes('.')) {
+      showToast('warning', 'Email invalide', 'Entrez une adresse valide');
+      return;
+    }
+    userEmail = email;
+    formForgot.classList.add('hidden');
+    formCode.classList.remove('hidden');
+    authTitle.textContent = "Vérification du code";
+    clearCodeInputs();
+    setupCodeInputs();
+  });
+
+  // Renvoyer le code
+  resendCodeBtn.addEventListener('click', () => {
+    showToast('success', 'Code renvoyé', `Nouveau code envoyé à ${userEmail}`);
+    clearCodeInputs();
+  });
+
+  // Vérification du code
+  verifyCodeBtn.addEventListener('click', () => {
+    const code = getFullCode();
+    if (code.length !== 6) {
+      showToast('warning', 'Code incomplet', 'Veuillez saisir les 6 chiffres');
+      return;
+    }
+    if (code === '123456') {
+      showToast('success', 'Code vérifié', 'Vous pouvez réinitialiser votre mot de passe');
+      setTimeout(() => {
+        formCode.classList.add('hidden');
+        formSignin.classList.remove('hidden');
+        authTitle.textContent = "Se connecter";
+        showToast('info', 'Réinitialisation', 'Un lien sécurisé vous a été envoyé');
+        clearCodeInputs();
+      }, 1500);
+    } else {
+      showToast('warning', 'Code invalide', 'Le code saisi est incorrect. Réessayez.');
+      clearCodeInputs();
+    }
+  });
+
+  // Toast
+  function showToast(type, title, message) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    let iconSvg = '', iconClass = '';
+    switch(type) {
+      case 'info': iconClass = 'icon-info'; iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`; break;
+      case 'success': iconClass = 'icon-success'; iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 6L9 17L4 12" stroke="currentColor" stroke-linecap="round"/></svg>`; break;
+      case 'warning': iconClass = 'icon-warning'; iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 7v6M12 17h.01"/><path d="M12 3L3 19h18L12 3z"/></svg>`; break;
+      default: iconClass = 'icon-info'; iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+    }
+    toast.innerHTML = `<div class="toast-icon ${iconClass}">${iconSvg}</div><div class="toast-content"><div class="toast-title">${title}</div><div class="toast-message">${message}</div></div><button class="toast-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
+    container.appendChild(toast);
+    const closeBtn = toast.querySelector('.toast-close');
+    closeBtn.addEventListener('click', () => { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 300); });
+    setTimeout(() => { if(toast.parentNode) { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 300); } }, 2000);
+  }
+  
+  // Inscription
+  document.getElementById('signupBtn').addEventListener('click', () => {
+    const lastname = document.getElementById('lastname').value;
+    const firstname = document.getElementById('firstname').value;
+    const email = document.getElementById('emailSignup').value;
+    const password = document.getElementById('passwordSignup').value;
+    const confirm = document.getElementById('confirmPassword').value;
+    const terms = document.getElementById('termsCheckbox').checked;
+    if (!lastname || !firstname || !email || !password || !confirm) { showToast('warning', 'Champs manquants', 'Veuillez remplir tous les champs'); return; }
+    if (password !== confirm) { showToast('warning', 'Mots de passe', 'Les mots de passe ne correspondent pas'); return; }
+    if (!terms) { showToast('warning', 'Conditions', 'Acceptez les conditions'); return; }
+    showToast('success', 'Compte créé', `Bienvenue ${firstname} ${lastname}`);
+  });
+  
+  // Connexion
+  document.getElementById('signinBtn').addEventListener('click', () => {
+    const email = document.getElementById('emailSignin').value;
+    const password = document.getElementById('passwordSignin').value;
+    if (!email || !password) { showToast('warning', 'Champs manquants', 'Email et mot de passe requis'); return; }
+    showToast('success', 'Connexion réussie', 'Bienvenue sur Recall');
+  });
+  
+  document.getElementById('termsLink')?.addEventListener('click', (e) => { e.preventDefault(); showToast('info', 'Conditions', 'Page des conditions à venir'); });
+  document.getElementById('googleSignup')?.addEventListener('click', () => showToast('info', 'Google', 'Inscription Google à venir'));
+  document.getElementById('outlookSignup')?.addEventListener('click', () => showToast('info', 'Outlook', 'Inscription Outlook à venir'));
+  document.getElementById('googleSignin')?.addEventListener('click', () => showToast('info', 'Google', 'Connexion Google à venir'));
+  document.getElementById('outlookSignin')?.addEventListener('click', () => showToast('info', 'Outlook', 'Connexion Outlook à venir'));
+</script>
+</body>
+</html>

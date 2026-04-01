@@ -5,528 +5,751 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Recall | Authentification</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
 <style>
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-  body {
-    background: #FDF9F2;
-    min-height: 100vh;
-    width: 100%;
-    font-family: 'Instrument Serif', serif;
-    overflow-x: hidden;
-  }
+body {
+  background: #FDF9F2;
+  min-height: 100vh;
+  width: 100%;
+  font-family: 'Instrument Serif', serif;
+  overflow-x: hidden;
+}
 
-  /* Écran d'accueil */
-  .home-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-    background: #FDF9F2;
-  }
+/* Écran d'accueil */
+.home-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  background: #FDF9F2;
+}
 
-  .scene {
-    display: flex;
-    align-items: baseline;
-    gap: 0.22em;
-    font-family: 'Instrument Serif', serif;
-    font-style: italic;
-    font-size: clamp(3rem, 12vw, 7rem);
-    letter-spacing: -0.02em;
-    white-space: nowrap;
-  }
+.scene {
+  display: flex;
+  align-items: baseline;
+  gap: 0.22em;
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: clamp(3rem, 12vw, 7rem);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
 
-  .word {
-    display: inline-block;
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-                transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-  }
+.word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
 
-  .word.up {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.word.up {
+  opacity: 1;
+  transform: translateY(0);
+}
 
-  #w-recall {
-    color: #6A8F6F;
-  }
+#w-recall {
+  color: #6A8F6F;
+}
 
-  #w-we, #w-for, #w-you {
-    color: #2C3A2B;
-  }
+#w-we, #w-for, #w-you {
+  color: #2C3A2B;
+}
 
-  /* Effet de rideau qui monte */
-  .curtain {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 0;
-    background: #acb6b1;
-    z-index: 20;
-    transition: height 1.4s cubic-bezier(0.65, 0, 0.35, 1);
-    pointer-events: none;
-  }
+/* Effet de rideau qui monte */
+.curtain {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  background: #acb6b1;
+  z-index: 20;
+  transition: height 1.4s cubic-bezier(0.65, 0, 0.35, 1);
+  pointer-events: none;
+}
 
-  .curtain::before {
-    content: '';
-    position: absolute;
-    top: -20px;
-    left: 0;
-    width: 100%;
-    height: 40px;
-    background: linear-gradient(to bottom, transparent, rgba(106, 143, 111, 0.05));
-    pointer-events: none;
-  }
+.curtain::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 0;
+  width: 100%;
+  height: 40px;
+  background: linear-gradient(to bottom, transparent, rgba(106, 143, 111, 0.05));
+  pointer-events: none;
+}
 
-  /* Écran d'authentification - PAS de container global qui dépasse */
-  .auth-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #F5F3EF;
-    z-index: 5;
-    opacity: 0;
-    transition: opacity 0.8s ease;
-    overflow-y: auto;
-    padding: 2rem;
-  }
+/* Écran d'authentification */
+.auth-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F5F3EF;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  overflow-y: auto;
+  padding: 2rem;
+}
 
-  .auth-screen.revealed {
-    opacity: 1;
-    z-index: 15;
-  }
+.auth-screen.revealed {
+  opacity: 1;
+  z-index: 15;
+}
 
-  /* Container de la carte — seul élément avec fond blanc et bordure */
+/* Container de la carte */
+.auth-container {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  background: #FFFFFF;
+  border: 1.5px solid #6A8F6F;
+  border-radius: 10px;
+  padding: 42px 34px 34px 34px;
+  transform: translateY(20px);
+  transition: transform 0.6s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+}
+
+.auth-screen.revealed .auth-container {
+  transform: translateY(0);
+}
+
+/* Titre flottant */
+.auth-title {
+  position: absolute;
+  top: -30px;
+  left: 5px;
+  font-family: 'Instrument Serif', serif;
+  font-size: 1.8rem;
+  font-style: italic;
+  color: #6A8F6F;
+  background: none;
+  padding: 0 16px;
+  letter-spacing: -0.01em;
+}
+
+/* Formulaires */
+.form-signup, .form-signin, .form-forgot, .form-code {
+  transition: opacity 0.3s ease;
+}
+
+.form-signup.hidden, .form-signin.hidden, .form-forgot.hidden, .form-code.hidden {
+  display: none;
+}
+
+/* Champs standard */
+.input-group {
+  margin-bottom: 24px;
+}
+
+/* Wrapper pour mot de passe + oeil */
+.password-wrapper {
+  position: relative;
+}
+
+.password-wrapper input {
+  padding-right: 48px;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.toggle-password svg {
+  width: 18px;
+  height: 18px;
+  stroke: #8F9A7A;
+  stroke-width: 1.5;
+  fill: none;
+  transition: stroke 0.2s ease, transform 0.2s ease;
+}
+
+.toggle-password:hover svg {
+  stroke: #6A8F6F;
+  transform: scale(1.05);
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.checkbox-group input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #6A8F6F;
+}
+
+.checkbox-group label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.75rem;
+  color: #5A6E55;
+  line-height: 1.4;
+}
+
+.checkbox-group a {
+  color: #6A8F6F;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+input {
+  width: 100%;
+  padding: 14px 20px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
+  background: transparent;
+  border: 1px solid #E0D9CF;
+  border-radius: 5px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+input:focus {
+  border-color: #6A8F6F;
+}
+
+/* 6 blocs de code */
+.code-digits-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.code-digit {
+  flex: 1;
+  aspect-ratio: 1 / 1.1;
+  text-align: center;
+  font-size: 1.7rem;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  padding: 0;
+  border: 1.5px solid #E0D9CF;
+  border-radius: 12px;
+  background: #FFFFFF;
+  transition: all 0.2s ease;
+  min-width: 0;
+}
+
+.code-digit:focus {
+  border-color: #6A8F6F;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(106, 143, 111, 0.2);
+}
+
+/* Boutons et sociaux */
+.social-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  margin-bottom: 0;
+}
+
+.social-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: transparent;
+  border: 1px solid #E0D9CF;
+  border-radius: 30px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #5A6E55;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.social-btn:hover {
+  border-color: #6A8F6F;
+  background: rgba(106, 143, 111, 0.05);
+  color: #6A8F6F;
+}
+
+.social-btn svg, .social-btn img {
+  width: 16px;
+  height: 16px;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 24px 0 20px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #E8E0D4;
+}
+
+.divider span {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.7rem;
+  color: #B9C0A4;
+  margin: 0 12px;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 14px 24px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  background: #2C3A2B;
+  color: #FDF9F2;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  margin-bottom: 12px;
+}
+
+.btn-primary:hover {
+  background: #6A8F6F;
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 14px 24px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  background: transparent;
+  color: #6A8F6F;
+  border: 1px solid #6A8F6F;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(106, 143, 111, 0.05);
+  color: #2C3A2B;
+}
+
+.auth-link {
+  margin-top: 24px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8rem;
+  color: #8F9A7A;
+  text-align: center;
+}
+
+.auth-link a {
+  color: #6A8F6F;
+  text-decoration: underline;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.forgot-link {
+  display: block;
+  margin-top: -12px;
+  margin-bottom: 24px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.75rem;
+  color: #6A8F6F;
+  text-decoration: underline;
+  text-align: right;
+  cursor: pointer;
+}
+
+.info-text {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  color: #5A6E55;
+  text-align: center;
+  margin-bottom: 24px;
+  line-height: 1.4;
+}
+
+/* Notification centrale */
+.central-notification {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-150%);
+  z-index: 2000;
+  max-width: 380px;
+  width: calc(100% - 48px);
+  background: #FFFFFF;
+  border-radius: 48px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: transform 0.5s cubic-bezier(0.34, 1.2, 0.64, 1), opacity 0.4s ease;
+  pointer-events: auto;
+  font-family: 'DM Sans', sans-serif;
+  opacity: 0;
+  visibility: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.central-notification.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  visibility: visible;
+}
+
+.central-notification.hide {
+  transform: translateX(-50%) translateY(-150%);
+  opacity: 0;
+  visibility: hidden;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, visibility 0s 0.4s;
+}
+
+.central-notification.info {
+  border: 1.5px solid #6A8F6F;
+}
+
+.central-notification.success {
+  border: 1.5px solid #5A9E5A;
+}
+
+.central-notification.warning {
+  border: 1.5px solid #C97B5C;
+}
+
+.central-notification.error {
+  border: 1.5px solid #C95C5C;
+}
+
+.notif-content {
+  padding-left: 20px;
+  text-align: left;
+  flex: 1;
+}
+
+.notif-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2C3A2B;
+  letter-spacing: -0.2px;
+  line-height: 1.3;
+}
+
+.notif-message {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: #8F9A7A;
+  margin-top: 2px;
+  letter-spacing: -0.1px;
+}
+
+.notif-close {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  margin: -8px;
+  margin-left: 12px;
+  opacity: 0.5;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notif-close:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.04);
+  transform: scale(1.05);
+}
+
+.notif-close svg {
+  width: 14px;
+  height: 14px;
+  stroke: #5A6E55;
+  stroke-width: 2;
+}
+
+/* Modal conditions */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-container {
+  width: 85%;
+  max-width: 900px;
+  height: 85%;
+  background: white;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+.modal-overlay.active .modal-container {
+  transform: translateY(0);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  background: white;
+  border-bottom: 1px solid #E8E0D4;
+  flex-shrink: 0;
+}
+
+.modal-header h3 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 1.5rem;
+  color: #6A8F6F;
+  margin: 0;
+}
+
+.modal-header h3 span:first-child {
+  color: #2C3A2B;
+}
+
+.modal-header h3 span:last-child {
+  color: #6A8F6F;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #8F9A7A;
+  transition: color 0.2s;
+  line-height: 1;
+  padding: 0 4px;
+  padding-top: 4px;
+}
+
+.modal-close:hover {
+  color: #C95C5C;
+}
+
+.modal-content {
+  flex: 1;
+  background: #F5F3EF;
+  padding: 0;
+}
+
+.modal-content embed {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* Responsive */
+@media (max-width: 500px) {
   .auth-container {
-    position: relative;
-    width: 100%;
-    max-width: 460px;
-    background: #FFFFFF;
-    border: 1.5px solid #6A8F6F;
-    border-radius: 10px;
-    padding: 42px 34px 34px 34px;
-    transform: translateY(20px);
-    transition: transform 0.6s ease;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+    padding: 38px 22px 28px 22px;
   }
-
-  .auth-screen.revealed .auth-container {
-    transform: translateY(0);
-  }
-
-  /* Titre flottant */
-  .auth-title {
-    position: absolute;
-    top: -30px;
-    left: 5px;
-    font-family: 'Instrument Serif', serif;
-    font-size: 1.8rem;
-    font-style: italic;
-    color: #6A8F6F;
-    background: none;
-    padding: 0 16px;
-    letter-spacing: -0.01em;
-  }
-
-  /* Formulaires */
-  .form-signup, .form-signin, .form-forgot, .form-code {
-    transition: opacity 0.3s ease;
-  }
-
-  .form-signup.hidden, .form-signin.hidden, .form-forgot.hidden, .form-code.hidden {
-    display: none;
-  }
-
-  /* Champs standard */
-  .input-group {
-    margin-bottom: 24px;
-  }
-
-  /* Wrapper pour mot de passe + oeil */
-  .password-wrapper {
-    position: relative;
-  }
-
-  .password-wrapper input {
-    padding-right: 48px;
-  }
-
-  .toggle-password {
-    position: absolute;
-    right: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    background: transparent;
-    border: none;
-    padding: 0;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-  }
-
-  .toggle-password svg {
-    width: 18px;
-    height: 18px;
-    stroke: #8F9A7A;
-    stroke-width: 1.5;
-    fill: none;
-    transition: stroke 0.2s ease, transform 0.2s ease;
-  }
-
-  .toggle-password:hover svg {
-    stroke: #6A8F6F;
-    transform: scale(1.05);
-  }
-
-  .checkbox-group {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 24px;
-  }
-
-  .checkbox-group input {
-    width: 15px;
-    height: 15px;
-    margin: 0;
-    cursor: pointer;
-    accent-color: #6A8F6F;
-  }
-
-  .checkbox-group label {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.75rem;
-    color: #5A6E55;
-    line-height: 1.4;
-  }
-
-  .checkbox-group a {
-    color: #6A8F6F;
-    text-decoration: underline;
-    font-weight: 500;
-  }
-
-  input {
-    width: 100%;
-    padding: 14px 20px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.95rem;
-    background: transparent;
-    border: 1px solid #E0D9CF;
-    border-radius: 5px;
-    outline: none;
-    transition: border-color 0.2s ease;
-  }
-
-  input:focus {
-    border-color: #6A8F6F;
-  }
-
-  /* ========== 6 BLOCS : AUCUN CONTAINER SUPPLÉMENTAIRE, JUSTE LES INPUTS ========== */
-  .code-digits-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 24px;
-    width: 100%;
-  }
-
   .code-digit {
-    flex: 1;
-    aspect-ratio: 1 / 1.1;
-    text-align: center;
-    font-size: 1.7rem;
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 600;
-    padding: 0;
-    border: 1.5px solid #E0D9CF;
-    border-radius: 12px;
-    background: #FFFFFF;
-    transition: all 0.2s ease;
-    min-width: 0;
+    font-size: 1.3rem;
+    border-radius: 8px;
   }
-
-  .code-digit:focus {
-    border-color: #6A8F6F;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(106, 143, 111, 0.2);
-  }
-
-  /* Boutons et sociaux */
-  .social-buttons {
-    display: flex;
-    gap: 12px;
-    margin-top: 20px;
-    margin-bottom: 0;
-  }
-
-  .social-btn {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .code-digits-row {
     gap: 8px;
-    padding: 10px 12px;
-    background: transparent;
-    border: 1px solid #E0D9CF;
-    border-radius: 30px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: #5A6E55;
-    cursor: pointer;
-    transition: all 0.2s ease;
   }
-
-  .social-btn:hover {
-    border-color: #6A8F6F;
-    background: rgba(106, 143, 111, 0.05);
-    color: #6A8F6F;
+  .central-notification {
+    top: 16px;
+    padding: 12px 16px;
+    width: calc(100% - 32px);
+    border-radius: 40px;
   }
-
-  .social-btn svg, .social-btn img {
-    width: 16px;
-    height: 16px;
-  }
-
-  .divider {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    margin: 24px 0 20px 0;
-  }
-
-  .divider::before,
-  .divider::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid #E8E0D4;
-  }
-
-  .divider span {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.7rem;
-    color: #B9C0A4;
-    margin: 0 12px;
-  }
-
-  .btn-primary {
-    width: 100%;
-    padding: 14px 24px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 500;
-    letter-spacing: 0.03em;
-    background: #2C3A2B;
-    color: #FDF9F2;
-    border: none;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: background 0.2s ease;
-    margin-bottom: 12px;
-  }
-
-  .btn-primary:hover {
-    background: #6A8F6F;
-  }
-
-  .btn-secondary {
-    width: 100%;
-    padding: 14px 24px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 500;
-    letter-spacing: 0.03em;
-    background: transparent;
-    color: #6A8F6F;
-    border: 1px solid #6A8F6F;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .btn-secondary:hover {
-    background: rgba(106, 143, 111, 0.05);
-    color: #2C3A2B;
-  }
-
-  .auth-link {
-    margin-top: 24px;
-    font-family: 'DM Sans', sans-serif;
+  .notif-title {
     font-size: 0.8rem;
-    color: #8F9A7A;
-    text-align: center;
   }
-
-  .auth-link a {
-    color: #6A8F6F;
-    text-decoration: underline;
-    font-weight: 500;
-    cursor: pointer;
+  .notif-message {
+    font-size: 0.65rem;
   }
+}
 
-  .forgot-link {
-    display: block;
-    margin-top: -12px;
-    margin-bottom: 24px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.75rem;
-    color: #6A8F6F;
-    text-decoration: underline;
-    text-align: right;
-    cursor: pointer;
-  }
+.modal-container {
+  width: 85%;
+  max-width: 900px;
+  height: 85%;
+  background: white;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
 
-  .info-text {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.85rem;
-    color: #5A6E55;
-    text-align: center;
-    margin-bottom: 24px;
-    line-height: 1.4;
-  }
+.modal-overlay.active .modal-container {
+  transform: translateY(0);
+}
 
-  /* Toast */
-  .toast-container {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
+.modal-content {
+  flex: 1;
+  background: #F5F3EF;
+  padding: 0;
+}
 
-  .toast {
-    background: #FFFFFF;
-    border-radius: 12px;
-    padding: 14px 18px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border: 1px solid #E8E0D4;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    animation: slideIn 0.3s ease;
-    min-width: 280px;
-    max-width: 320px;
-  }
+.modal-content embed {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
 
-  .toast-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
+/* Modal conditions */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(245, 243, 239, 0.85);
+  backdrop-filter: blur(4px);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
 
-  .toast-icon svg {
-    width: 16px;
-    height: 16px;
-  }
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
 
-  .toast-content {
-    flex: 1;
-  }
+.modal-container {
+  width: 85%;
+  max-width: 900px;
+  height: 85%;
+  background: white;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
 
-  .toast-title {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #2C3A2B;
-  }
+.modal-overlay.active .modal-container {
+  transform: translateY(0);
+}
 
-  .toast-message {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.75rem;
-    color: #8F9A7A;
-    margin-top: 2px;
-  }
+.modal-content {
+  flex: 1;
+  background: #F5F3EF;
+  padding: 0;
+}
 
-  .toast-close {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 4px;
-    opacity: 0.4;
-    transition: opacity 0.2s;
-  }
+.modal-content embed {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
 
-  .toast-close:hover {
-    opacity: 1;
-  }
-
-  .toast-close svg {
-    width: 12px;
-    height: 12px;
-    stroke: #8F9A7A;
-  }
-
-  .icon-info { background: rgba(106, 143, 111, 0.12); stroke: #6A8F6F; }
-  .icon-success { background: rgba(106, 143, 111, 0.15); stroke: #6A8F6F; }
-  .icon-warning { background: rgba(201, 123, 92, 0.12); stroke: #C97B5C; }
-
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateX(100%);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  .toast.fade-out {
-    animation: fadeOut 0.3s ease forwards;
-  }
-
-  @keyframes fadeOut {
-    to {
-      opacity: 0;
-      transform: translateX(100%);
-    }
-  }
-
-  /* Responsive : les 6 blocs s'adaptent */
-  @media (max-width: 500px) {
-    .auth-container {
-      padding: 38px 22px 28px 22px;
-    }
-    .code-digit {
-      font-size: 1.3rem;
-      border-radius: 8px;
-    }
-    .code-digits-row {
-      gap: 8px;
-    }
-  }
+.form-code-signup.hidden {
+  display: none;
+}
 </style>
 </head>
 <body>
+
+<!-- Modal conditions -->
+<div class="modal-overlay" id="termsModal">
+  <div class="modal-container">
+    <div class="modal-content">
+      <embed id="pdfEmbed" src="" type="application/pdf" style="width: 100%; height: 100%;">
+    </div>
+  </div>
+</div>
+
+<!-- Notification centrale -->
+<div class="central-notification" id="centralNotification">
+  <div class="notif-content">
+    <div class="notif-title" id="notifTitle"></div>
+    <div class="notif-message" id="notifMessage"></div>
+  </div>
+  <button class="notif-close" id="notifClose">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="18" y1="6" x2="6" y2="18"/>
+      <line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  </button>
+</div>
 
 <!-- Écran d'accueil -->
 <div class="home-screen" id="homeScreen">
@@ -577,13 +800,13 @@
       </div>
       
       <div class="checkbox-group">
-        <input type="checkbox" id="termsCheckbox">
+        <input type="checkbox" id="termsCheckbox" style="width: 12.5px; height: 12.5px;">
         <label for="termsCheckbox">
           J'accepte les <a href="#" id="termsLink">conditions d'utilisation</a>
         </label>
       </div>
       
-      <button class="btn-primary" id="signupBtn">Créer mon compte</button>
+      <button class="btn-primary" id="signupBtn" style="margin-bottom: 0px;">Créer mon compte</button>
       
       <div class="divider">
         <span>ou</span>
@@ -604,6 +827,26 @@
         Déjà un compte ? <a id="switchToSignin">Se connecter</a>
       </div>
     </div>
+
+    <!-- Formulaire de vérification du code pour inscription -->
+<div class="form-code-signup hidden" id="formCodeSignup">
+  <div class="info-text">
+    Pour finaliser la création de votre compte, un code à 6 chiffres a été envoyé à l'adresse email : <span id="signupEmailDisplay" style="color: #5A9E5A;">.</span>
+  </div>
+  <div class="code-digits-row">
+    <input type="text" maxlength="1" class="code-digit" id="signupCode1" autofocus>
+    <input type="text" maxlength="1" class="code-digit" id="signupCode2">
+    <input type="text" maxlength="1" class="code-digit" id="signupCode3">
+    <input type="text" maxlength="1" class="code-digit" id="signupCode4">
+    <input type="text" maxlength="1" class="code-digit" id="signupCode5">
+    <input type="text" maxlength="1" class="code-digit" id="signupCode6">
+  </div>
+  <button class="btn-primary" id="verifySignupCodeBtn">Vérifier le code</button>
+  <button class="btn-secondary" id="resendSignupCodeBtn">Renvoyer le code</button>
+  <div class="auth-link">
+    <a id="backToSignupFromCode">Modifier mon email</a>
+  </div>
+</div>
     
     <!-- Formulaire de connexion -->
     <div class="form-signin" id="formSignin">
@@ -622,7 +865,7 @@
       
       <a href="#" id="forgotPassword" class="forgot-link">Mot de passe oublié ?</a>
       
-      <button class="btn-primary" id="signinBtn">Se connecter</button>
+      <button class="btn-primary" id="signinBtn" style="margin-bottom: 0px;">Se connecter</button>
       
       <div class="divider">
         <span>ou</span>
@@ -658,9 +901,9 @@
 
     <!-- Formulaire de vérification du code : AUCUN CONTAINER AUTOUR DES BLOCS, juste les 6 inputs inline -->
     <div class="form-code hidden" id="formCode">
-      <div class="info-text">
-        Un code à 6 chiffres a été envoyé à votre adresse email
-      </div>
+        <div class="info-text">
+        Un code de vérification à 6 chiffres a été envoyé à l'adresse email : <span id="resetEmailDisplay" style="color: #5A9E5A;">.</span>.
+        </div>
       <!-- LES 6 BLOCS SONT DIRECTEMENT ICI, PAS DE DIV CONTENEUR ADDITIONNEL QUI DÉPASSE -->
       <div class="code-digits-row">
         <input type="text" maxlength="1" class="code-digit" id="code1" autofocus>
@@ -679,9 +922,6 @@
   </div>
 </div>
 
-<!-- Toast container -->
-<div class="toast-container" id="toastContainer"></div>
-
 <script>
   // DOM elements
   const homeScreen = document.getElementById('homeScreen');
@@ -696,6 +936,7 @@
   const formSignin = document.getElementById('formSignin');
   const formForgot = document.getElementById('formForgot');
   const formCode = document.getElementById('formCode');
+  const formCodeSignup = document.getElementById('formCodeSignup');
   const authTitle = document.getElementById('authTitle');
   
   const switchToSignin = document.getElementById('switchToSignin');
@@ -709,12 +950,97 @@
   const resetEmail = document.getElementById('resetEmail');
   
   let userEmail = '';
+  let signupData = null;
+  let signupCodeTimeout = null;
+
+  // ========== SYSTÈME DE NOTIFICATION ==========
+  const notificationDiv = document.getElementById('centralNotification');
+  const notifTitle = document.getElementById('notifTitle');
+  const notifMessage = document.getElementById('notifMessage');
+  const notifClose = document.getElementById('notifClose');
+  
+  let currentTimeout = null;
+  let isVisible = false;
+  
+  function showNotification(type, title, message, options = {}) {
+    const { duration = 2500 } = options;
+    
+    if (currentTimeout) clearTimeout(currentTimeout);
+    
+    notificationDiv.classList.remove('info', 'success', 'warning', 'error');
+    notificationDiv.classList.add(type);
+    
+    notifTitle.textContent = title;
+    notifMessage.textContent = message;
+    
+    if (isVisible) {
+      hideNotification(() => showNotificationContent(duration));
+    } else {
+      showNotificationContent(duration);
+    }
+  }
+  
+  function showNotificationContent(duration) {
+    notificationDiv.offsetHeight;
+    notificationDiv.classList.remove('hide');
+    notificationDiv.classList.add('show');
+    isVisible = true;
+    
+    currentTimeout = setTimeout(() => hideNotification(), duration);
+  }
+  
+  function hideNotification(callback) {
+    if (!isVisible) {
+      if (callback) callback();
+      return;
+    }
+    
+    notificationDiv.classList.remove('show');
+    notificationDiv.classList.add('hide');
+    
+    setTimeout(() => {
+      isVisible = false;
+      notificationDiv.classList.remove('hide');
+      if (callback) callback();
+    }, 400);
+  }
+  
+  if (notifClose) {
+    notifClose.addEventListener('click', (e) => {
+      e.stopPropagation();
+      hideNotification();
+    });
+  }
+  
+  function showToast(type, title, message, options = {}) {
+    showNotification(type, title, message, options);
+  }
+
+  // Validation du format email
+  function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  // Générer un code aléatoire à 6 chiffres
+  function generateCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  // Fonction pour envoyer le code (simulation)
+  function sendSignupCode(email) {
+    const code = generateCode();
+    signupCodeTimeout = code;
+    console.log('Code de vérification (simulation):', code);
+    return code;
+  }
 
   // Par défaut : connexion visible
   formSignup.classList.add('hidden');
   formSignin.classList.remove('hidden');
   formForgot.classList.add('hidden');
   formCode.classList.add('hidden');
+  if (formCodeSignup) formCodeSignup.classList.add('hidden');
   authTitle.textContent = "Se connecter";
 
   // Animation des mots
@@ -739,23 +1065,34 @@
     }, 1300);
   }, 800);
 
-  // Gestion du déplacement entre les 6 blocs de code (sans container superflu)
+  // ========== GESTION DES BLOCS DE CODE (MOT DE PASSE OUBLIÉ) ==========
   function setupCodeInputs() {
-    const codeInputs = document.querySelectorAll('.code-digit');
+    const codeInputs = document.querySelectorAll('#formCode .code-digit');
     codeInputs.forEach((input, idx) => {
       input.removeEventListener('input', window._codeInputHandler);
       input.removeEventListener('keydown', window._codeKeyHandler);
       
       const inputHandler = (e) => {
+        input.value = input.value.replace(/[^0-9]/g, '');
         if (input.value.length === 1 && idx < codeInputs.length - 1) {
           codeInputs[idx + 1].focus();
         }
       };
+      
       const keyHandler = (e) => {
         if (e.key === 'Backspace' && input.value.length === 0 && idx > 0) {
           codeInputs[idx - 1].focus();
         }
+        if (e.key === 'ArrowLeft' && idx > 0) {
+          e.preventDefault();
+          codeInputs[idx - 1].focus();
+        }
+        if (e.key === 'ArrowRight' && idx < codeInputs.length - 1) {
+          e.preventDefault();
+          codeInputs[idx + 1].focus();
+        }
       };
+      
       input.addEventListener('input', inputHandler);
       input.addEventListener('keydown', keyHandler);
       window._codeInputHandler = inputHandler;
@@ -780,7 +1117,59 @@
     if (first) first.focus();
   }
 
-  // Toggle password
+  // ========== GESTION DES BLOCS DE CODE (INSCRIPTION) ==========
+  function setupSignupCodeInputs() {
+    const codeInputs = document.querySelectorAll('#formCodeSignup .code-digit');
+    codeInputs.forEach((input, idx) => {
+      input.removeEventListener('input', window._signupCodeInputHandler);
+      input.removeEventListener('keydown', window._signupCodeKeyHandler);
+      
+      const inputHandler = (e) => {
+        input.value = input.value.replace(/[^0-9]/g, '');
+        if (input.value.length === 1 && idx < codeInputs.length - 1) {
+          codeInputs[idx + 1].focus();
+        }
+      };
+      
+      const keyHandler = (e) => {
+        if (e.key === 'Backspace' && input.value.length === 0 && idx > 0) {
+          codeInputs[idx - 1].focus();
+        }
+        if (e.key === 'ArrowLeft' && idx > 0) {
+          e.preventDefault();
+          codeInputs[idx - 1].focus();
+        }
+        if (e.key === 'ArrowRight' && idx < codeInputs.length - 1) {
+          e.preventDefault();
+          codeInputs[idx + 1].focus();
+        }
+      };
+      
+      input.addEventListener('input', inputHandler);
+      input.addEventListener('keydown', keyHandler);
+      window._signupCodeInputHandler = inputHandler;
+      window._signupCodeKeyHandler = keyHandler;
+    });
+  }
+
+  function getSignupFullCode() {
+    let code = '';
+    for (let i = 1; i <= 6; i++) {
+      const digit = document.getElementById(`signupCode${i}`).value;
+      code += digit;
+    }
+    return code;
+  }
+
+  function clearSignupCodeInputs() {
+    for (let i = 1; i <= 6; i++) {
+      document.getElementById(`signupCode${i}`).value = '';
+    }
+    const first = document.getElementById('signupCode1');
+    if (first) first.focus();
+  }
+
+  // ========== TOGGLE PASSWORD ==========
   document.querySelectorAll('.toggle-password').forEach(btn => {
     btn.addEventListener('click', function() {
       const targetId = this.getAttribute('data-target');
@@ -797,13 +1186,14 @@
     });
   });
 
-  // Switch vers connexion
+  // ========== SWITCH FORMULAIRES ==========
   switchToSignin.addEventListener('click', (e) => {
     e.preventDefault();
     formSignup.classList.add('hidden');
     formSignin.classList.remove('hidden');
     formForgot.classList.add('hidden');
     formCode.classList.add('hidden');
+    if (formCodeSignup) formCodeSignup.classList.add('hidden');
     authTitle.textContent = "Se connecter";
   });
   
@@ -813,6 +1203,7 @@
     formSignup.classList.remove('hidden');
     formForgot.classList.add('hidden');
     formCode.classList.add('hidden');
+    if (formCodeSignup) formCodeSignup.classList.add('hidden');
     authTitle.textContent = "S'inscrire";
   });
 
@@ -821,6 +1212,7 @@
     formSignin.classList.add('hidden');
     formForgot.classList.remove('hidden');
     formCode.classList.add('hidden');
+    if (formCodeSignup) formCodeSignup.classList.add('hidden');
     authTitle.textContent = "Mot de passe oublié";
     resetEmail.value = '';
   });
@@ -841,18 +1233,24 @@
     clearCodeInputs();
   });
 
-  // Envoi du code (vers l'écran des 6 blocs)
+  // ========== MOT DE PASSE OUBLIÉ - ENVOI CODE ==========
   sendCodeBtn.addEventListener('click', () => {
     const email = resetEmail.value.trim();
     if (!email) {
       showToast('warning', 'Email requis', 'Veuillez remplir votre adresse email');
       return;
     }
-    if (!email.includes('@') || !email.includes('.')) {
-      showToast('warning', 'Email invalide', 'Entrez une adresse valide');
+    if (!isValidEmail(email)) {
+      showToast('warning', 'Email invalide', 'Format attendu : exemple@domaine.com');
       return;
     }
     userEmail = email;
+    
+    const resetEmailDisplay = document.getElementById('resetEmailDisplay');
+    if (resetEmailDisplay) {
+      resetEmailDisplay.textContent = email;
+    }
+    
     formForgot.classList.add('hidden');
     formCode.classList.remove('hidden');
     authTitle.textContent = "Vérification du code";
@@ -860,80 +1258,206 @@
     setupCodeInputs();
   });
 
-  // Renvoyer le code
   resendCodeBtn.addEventListener('click', () => {
     showToast('success', 'Code renvoyé', `Nouveau code envoyé à ${userEmail}`);
     clearCodeInputs();
   });
 
-  // Vérification du code
   verifyCodeBtn.addEventListener('click', () => {
     const code = getFullCode();
     if (code.length !== 6) {
-      showToast('warning', 'Code incomplet', 'Veuillez saisir les 6 chiffres');
+      showToast('warning', 'Code incomplet', 'Veuillez saisir les 6 chiffres du code.');
       return;
     }
     if (code === '123456') {
-      showToast('success', 'Code vérifié', 'Vous pouvez réinitialiser votre mot de passe');
+      showToast('success', 'Code vérifié', 'Vous pouvez réinitialiser votre mot de passe.');
       setTimeout(() => {
         formCode.classList.add('hidden');
         formSignin.classList.remove('hidden');
         authTitle.textContent = "Se connecter";
-        showToast('info', 'Réinitialisation', 'Un lien sécurisé vous a été envoyé');
+        showToast('info', 'Réinitialisation', 'Un lien sécurisé vous a été envoyé.');
         clearCodeInputs();
       }, 1500);
     } else {
-      showToast('warning', 'Code invalide', 'Le code saisi est incorrect. Réessayez.');
+      showToast('error', 'Code invalide', 'Le code saisi est incorrect. Réessayez.');
       clearCodeInputs();
     }
   });
 
-  // Toast
-  function showToast(type, title, message) {
-    const container = document.getElementById('toastContainer');
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    let iconSvg = '', iconClass = '';
-    switch(type) {
-      case 'info': iconClass = 'icon-info'; iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`; break;
-      case 'success': iconClass = 'icon-success'; iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 6L9 17L4 12" stroke="currentColor" stroke-linecap="round"/></svg>`; break;
-      case 'warning': iconClass = 'icon-warning'; iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 7v6M12 17h.01"/><path d="M12 3L3 19h18L12 3z"/></svg>`; break;
-      default: iconClass = 'icon-info'; iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
-    }
-    toast.innerHTML = `<div class="toast-icon ${iconClass}">${iconSvg}</div><div class="toast-content"><div class="toast-title">${title}</div><div class="toast-message">${message}</div></div><button class="toast-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
-    container.appendChild(toast);
-    const closeBtn = toast.querySelector('.toast-close');
-    closeBtn.addEventListener('click', () => { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 300); });
-    setTimeout(() => { if(toast.parentNode) { toast.classList.add('fade-out'); setTimeout(() => toast.remove(), 300); } }, 2000);
-  }
-  
-  // Inscription
+  // ========== INSCRIPTION AVEC CODE DE VÉRIFICATION ==========
   document.getElementById('signupBtn').addEventListener('click', () => {
-    const lastname = document.getElementById('lastname').value;
-    const firstname = document.getElementById('firstname').value;
-    const email = document.getElementById('emailSignup').value;
+    const lastname = document.getElementById('lastname').value.trim();
+    const firstname = document.getElementById('firstname').value.trim();
+    const email = document.getElementById('emailSignup').value.trim();
     const password = document.getElementById('passwordSignup').value;
     const confirm = document.getElementById('confirmPassword').value;
     const terms = document.getElementById('termsCheckbox').checked;
-    if (!lastname || !firstname || !email || !password || !confirm) { showToast('warning', 'Champs manquants', 'Veuillez remplir tous les champs'); return; }
-    if (password !== confirm) { showToast('warning', 'Mots de passe', 'Les mots de passe ne correspondent pas'); return; }
-    if (!terms) { showToast('warning', 'Conditions', 'Acceptez les conditions'); return; }
-    showToast('success', 'Compte créé', `Bienvenue ${firstname} ${lastname}`);
+    
+    if (!lastname || !firstname || !email || !password || !confirm) { 
+      showToast('warning', 'Champs manquants', 'Veuillez remplir tous les champs.'); 
+      return; 
+    }
+    if (!isValidEmail(email)) {
+      showToast('warning', 'Email invalide', 'Exemple de format attendu : texte@domaine.com');
+      return;
+    }
+    if (password !== confirm) { 
+      showToast('warning', 'Mots de passe', 'Les mots de passe ne correspondent pas.'); 
+      return; 
+    }
+    if (password.length < 6) {
+      showToast('warning', 'Mot de passe', 'Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+    if (!terms) { 
+      showToast('warning', 'Conditions', 'Merci d\'accepter les conditions.'); 
+      return; 
+    }
+    
+    // Sauvegarder les données d'inscription
+    signupData = {
+      lastname,
+      firstname,
+      email,
+      password
+    };
+    
+    // Envoyer le code de vérification
+    const code = sendSignupCode(email);
+    signupCodeTimeout = code;
+    
+    // Afficher l'email
+    const signupEmailDisplay = document.getElementById('signupEmailDisplay');
+    if (signupEmailDisplay) {
+      signupEmailDisplay.textContent = email;
+    }
+    
+    // Passer à l'écran de vérification
+    formSignup.classList.add('hidden');
+    formCodeSignup.classList.remove('hidden');
+    authTitle.textContent = "Finalisation du compte";
+    
+    // Réinitialiser les champs de code
+    clearSignupCodeInputs();
+    setupSignupCodeInputs();
   });
-  
-  // Connexion
+
+  // Vérification du code d'inscription
+  const verifySignupCodeBtn = document.getElementById('verifySignupCodeBtn');
+  const resendSignupCodeBtn = document.getElementById('resendSignupCodeBtn');
+  const backToSignupFromCode = document.getElementById('backToSignupFromCode');
+
+  if (verifySignupCodeBtn) {
+    verifySignupCodeBtn.addEventListener('click', () => {
+      const code = getSignupFullCode();
+      if (code.length !== 6) {
+        showToast('warning', 'Code incomplet', 'Veuillez saisir les 6 chiffres');
+        return;
+      }
+      
+      if (code === signupCodeTimeout) {
+        showToast('success', 'Compte créé', `Bienvenue ${signupData.firstname} ${signupData.lastname}`);
+        
+        // Réinitialiser les champs d'inscription
+        document.getElementById('lastname').value = '';
+        document.getElementById('firstname').value = '';
+        document.getElementById('emailSignup').value = '';
+        document.getElementById('passwordSignup').value = '';
+        document.getElementById('confirmPassword').value = '';
+        document.getElementById('termsCheckbox').checked = false;
+        
+        setTimeout(() => {
+          formCodeSignup.classList.add('hidden');
+          formSignin.classList.remove('hidden');
+          authTitle.textContent = "Se connecter";
+          showToast('info', 'Connexion', 'Vous pouvez maintenant vous connecter avec vos identifiants');
+          signupData = null;
+          signupCodeTimeout = null;
+        }, 1500);
+      } else {
+        showToast('error', 'Code invalide', 'Le code saisi est incorrect. Réessayez.');
+        clearSignupCodeInputs();
+      }
+    });
+  }
+
+  if (resendSignupCodeBtn) {
+    resendSignupCodeBtn.addEventListener('click', () => {
+      if (signupData) {
+        const newCode = sendSignupCode(signupData.email);
+        signupCodeTimeout = newCode;
+        clearSignupCodeInputs();
+      }
+    });
+  }
+
+  if (backToSignupFromCode) {
+    backToSignupFromCode.addEventListener('click', (e) => {
+      e.preventDefault();
+      formCodeSignup.classList.add('hidden');
+      formSignup.classList.remove('hidden');
+      authTitle.textContent = "S'inscrire";
+      signupData = null;
+      signupCodeTimeout = null;
+      clearSignupCodeInputs();
+    });
+  }
+
+  // ========== CONNEXION ==========
   document.getElementById('signinBtn').addEventListener('click', () => {
-    const email = document.getElementById('emailSignin').value;
+    const email = document.getElementById('emailSignin').value.trim();
     const password = document.getElementById('passwordSignin').value;
-    if (!email || !password) { showToast('warning', 'Champs manquants', 'Email et mot de passe requis'); return; }
+    
+    if (!email || !password) { 
+      showToast('warning', 'Champs manquants', 'Email et mot de passe requis'); 
+      return; 
+    }
+    if (!isValidEmail(email)) {
+      showToast('warning', 'Email invalide', 'Format attendu : exemple@domaine.com');
+      return;
+    }
     showToast('success', 'Connexion réussie', 'Bienvenue sur Recall');
+    
+    document.getElementById('emailSignin').value = '';
+    document.getElementById('passwordSignin').value = '';
   });
   
-  document.getElementById('termsLink')?.addEventListener('click', (e) => { e.preventDefault(); showToast('info', 'Conditions', 'Page des conditions à venir'); });
+  // ========== BOUTONS SOCIAUX ==========
   document.getElementById('googleSignup')?.addEventListener('click', () => showToast('info', 'Google', 'Inscription Google à venir'));
   document.getElementById('outlookSignup')?.addEventListener('click', () => showToast('info', 'Outlook', 'Inscription Outlook à venir'));
   document.getElementById('googleSignin')?.addEventListener('click', () => showToast('info', 'Google', 'Connexion Google à venir'));
   document.getElementById('outlookSignin')?.addEventListener('click', () => showToast('info', 'Outlook', 'Connexion Outlook à venir'));
+
+  // ========== MODAL CONDITIONS ==========
+  const modalOverlay = document.getElementById('termsModal');
+  const pdfEmbed = document.getElementById('pdfEmbed');
+
+  function openModal() {
+    modalOverlay.classList.add('active');
+    pdfEmbed.src = 'Conditions_Utilisation_Recall.pdf';
+  }
+
+  function closeModal() {
+    modalOverlay.classList.remove('active');
+    setTimeout(() => {
+      pdfEmbed.src = '';
+    }, 300);
+  }
+
+  document.getElementById('termsLink')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openModal();
+  });
+
+  modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) closeModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modalOverlay.classList.contains('active')) {
+      closeModal();
+    }
+  });
 </script>
 </body>
 </html>
